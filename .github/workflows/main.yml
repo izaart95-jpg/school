@@ -1,4 +1,4 @@
-name: RustDesk Screenshot
+RustDesk Screenshot
 
 on:
   workflow_dispatch:
@@ -6,52 +6,112 @@ on:
 jobs:
   rustdesk-screenshot:
     runs-on: windows-latest
-    timeout-minutes: 360  # 6 hours
+    timeout-minutes: 360  # 24 hours
 
     steps:
-      - name: Download & Install AutoHotkey v2
+      - name: Download RustDesk
         run: |
-          $ahkUrl = "https://www.autohotkey.com/download/ahk-v2.exe"
-          $ahkExe = "$env:TEMP\ahk_v2.exe"
-          Invoke-WebRequest -Uri $ahkUrl -OutFile $ahkExe
-          Start-Process -FilePath $ahkExe -ArgumentList "/silent" -Wait
+          $rustdeskUrl = "https://github.com/rustdesk/rustdesk/releases/download/1.4.4/rustdesk-1.4.4-x86_64.exe"
+          $rustdeskPath = "$env:TEMP\rustdesk.exe"
+          Invoke-WebRequest -Uri $rustdeskUrl -OutFile $rustdeskPath
+          echo "RUSTDESK_PATH=$rustdeskPath" >> $env:GITHUB_ENV
 
-      - name: Create script.ahk
+      - name: Download NirCmd
         run: |
-          $scriptPath = "$env:TEMP\script.ahk"
-          Set-Content -Path $scriptPath -Value @"
-Sleep 3000
-Send "ffbewafa709@gmail.com"
-Sleep 1000
-Send "{Tab}"
-Sleep 1000
-Send "Hamza@123456"
-Sleep 1000
-Send "{Enter}"
-Sleep 30000
-Send "{Enter}"
-"@
-          echo "AHK_SCRIPT=$scriptPath" >> $env:GITHUB_ENV
+          $nircmdUrl = "https://www.nirsoft.net/utils/nircmd.zip"
+          $nircmdZip = "$env:TEMP\nircmd.zip"
+          $nircmdDir = "$env:TEMP\nircmd"
+          
+          Invoke-WebRequest -Uri $nircmdUrl -OutFile $nircmdZip
+          Expand-Archive -Path $nircmdZip -DestinationPath $nircmdDir -Force
+          # Copy nircmd.exe to a more accessible location
+          Copy-Item "$nircmdDir\nircmd.exe" "$env:TEMP\nircmd.exe"
+          echo "NIRCMD_PATH=$env:TEMP\nircmd.exe" >> $env:GITHUB_ENV
 
-      - name: Download & Install Parsec
+      - name: Create and use working directory
         run: |
-          $parsecUrl = "https://builds.parsec.app/package/parsec-windows.exe"
-          $parsecExe = "$env:TEMP\parsec.exe"
-          Invoke-WebRequest -Uri $parsecUrl -OutFile $parsecExe
-          Start-Process -FilePath $parsecExe -ArgumentList "/S" -Wait
-          Start-Sleep -Seconds 20
+          # Create a dedicated working directory
+          $workDir = "$env:GITHUB_WORKSPACE\screenshots"
+          New-Item -ItemType Directory -Path $workDir -Force
+          Set-Location $workDir
+          echo "WORK_DIR=$workDir" >> $env:GITHUB_ENV
 
-      - name: Run AHK script to auto-login Parsec
+      - name: Start RustDesk and take screenshots
         run: |
-          $ahkRunner = "C:\Program Files\AutoHotkey\UX\AutoHotkeyUX.exe"
-          & "$ahkRunner" "$env:AHK_SCRIPT"
+          # Start RustDesk
+          Start-Process -FilePath $env:RUSTDESK_PATH
+          Write-Host "RustDesk started, waiting for initialization..."
+          Start-Sleep -Seconds 10
 
-      - name: Keep workflow alive for 6 hours
+          # Change to working directory for screenshots
+          Set-Location $env:WORK_DIR
+
+          # Take 3 screenshots with full paths
+          for ($i = 1; $i -le 3; $i++) {
+              Write-Host "Taking screenshot $i..."
+              $screenshotPath = "$env:WORK_DIR\screenshot_$i.png"
+              & $env:NIRCMD_PATH savescreenshot full "$screenshotPath"
+              Write-Host "Screenshot saved to: $screenshotPath"
+              Start-Sleep -Seconds 2
+          }
+
+      - name: Verify and list screenshots
         run: |
-          Write-Host "=== Workflow Running 6 Hours ==="
-          $start = Get-Date
-          while ((New-TimeSpan -Start $start -End (Get-Date)).TotalHours -lt 6) {
-              Write-Host "[$(Get-Date)] Still running..."
+          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "Looking for screenshots in: $env:WORK_DIR"
+          Get-ChildItem -Path $env:WORK_DIR -Recurse -Force
+          
+          $screenshots = Get-ChildItem -Path "$env:WORK_DIR\*.png" -ErrorAction SilentlyContinue
+          if ($screenshots.Count -eq 0) {
+              Write-Host "No PNG files found. Trying different locations..."
+              # Check common locations
+              Get-ChildItem -Path "$env:TEMP\*.png" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Found in TEMP: $($_.FullName)" }
+              Get-ChildItem -Path "C:\*.png" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Found in C:\: $($_.FullName)" }
+          } else {
+              Write-Host "Found $($screenshots.Count) screenshots:"
+              $screenshots | ForEach-Object { Write-Host "  - $($_.FullName)" }
+          }
+
+      - name: Try alternative screenshot method
+        if: always()
+        run: |
+          # Alternative method using .NET if NirCmd fails
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+          
+          $screenBounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bitmap = New-Object System.Drawing.Bitmap $screenBounds.Width, $screenBounds.Height
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen($screenBounds.Location, [System.Drawing.Point]::Empty, $screenBounds.Size)
+          
+          $screenshotPath = "$env:WORK_DIR\dotnet_screenshot.png"
+          $bitmap.Save($screenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
+          $graphics.Dispose()
+          $bitmap.Dispose()
+          
+          Write-Host "Alternative screenshot saved to: $screenshotPath"
+
+      - name: Upload screenshots as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustdesk-screenshots
+          path: |
+            ${{ env.WORK_DIR }}/*.png
+            ${{ env.TEMP }}/*.png
+          retention-days: 1
+
+      - name: Keep workflow running 24/7
+        run: |
+          Write-Host "=== RustDesk Screenshot Workflow ==="
+          Write-Host "RustDesk is running in the background"
+          Write-Host "Workflow will run for 24 hours or until manually cancelled"
+          Write-Host "====================================="
+          
+          # Keep the workflow alive
+          $startTime = Get-Date
+          while ((New-TimeSpan -Start $startTime -End (Get-Date)).TotalHours -lt 24) {
+              Write-Host "[$(Get-Date)] RustDesk still running... (Ctrl+C in workflow to terminate)"
               Start-Sleep -Seconds 300
           }
-          Write-Host "Completed 6 hours."
+          
+          Write-Host "24-hour limit reached, workflow completed"
