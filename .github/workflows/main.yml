@@ -1,0 +1,112 @@
+name: Parsec Auto Login
+
+on:
+  workflow_dispatch:
+
+jobs:
+  parsec-auto-login:
+    runs-on: windows-latest
+    timeout-minutes: 360  # 6 hours
+
+    steps:
+      - name: Download and install AutoHotkey v2
+        run: |
+          $ahkUrl = "https://www.autohotkey.com/download/ahk-v2.exe"
+          $ahkPath = "$env:TEMP\ahk-v2.exe"
+          Invoke-WebRequest -Uri $ahkUrl -OutFile $ahkPath
+          # Install AutoHotkey silently
+          Start-Process -FilePath $ahkPath -ArgumentList "/silent" -Wait
+          echo "AHK installed"
+
+      - name: Create AutoHotkey script
+        run: |
+          $scriptContent = @'
+Sleep 3000
+Send "ffbewafa709@gmail.com"
+Sleep 1000
+Send "{Tab}"
+Sleep 1000
+Send "Hamza@123456" 
+Sleep 1000
+Send "{Enter}"
+Sleep 30000
+Send "{Enter}"
+'@
+          $scriptPath = "$env:TEMP\script.ahk"
+          Set-Content -Path $scriptPath -Value $scriptContent
+          echo "SCRIPT_PATH=$scriptPath" >> $env:GITHUB_ENV
+          echo "AHK script created at: $scriptPath"
+
+      - name: Download and install Parsec
+        run: |
+          $parsecUrl = "https://builds.parsec.app/package/parsec-windows.exe"
+          $parsecPath = "$env:TEMP\parsec-windows.exe"
+          Invoke-WebRequest -Uri $parsecUrl -OutFile $parsecPath
+          # Install Parsec silently
+          Start-Process -FilePath $parsecPath -ArgumentList "/S" -Wait
+          echo "Parsec installed"
+          # Wait for installation to complete
+          Start-Sleep -Seconds 20
+
+      - name: Run AutoHotkey script
+        run: |
+          # Path to AutoHotkey executable
+          $ahkExePath = "C:\Program Files\AutoHotkey\UX\AutoHotkeyUX.exe"
+          
+          if (Test-Path $ahkExePath) {
+              Write-Host "Running AutoHotkey script..."
+              # Start Parsec first (it should auto-start after installation)
+              Start-Process "parsec:" -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 5
+              
+              # Run the AutoHotkey script
+              Start-Process -FilePath $ahkExePath -ArgumentList "`"$env:SCRIPT_PATH`""
+              Write-Host "AutoHotkey script started"
+          } else {
+              Write-Host "AutoHotkey not found at: $ahkExePath"
+              # Try alternative location
+              $altAhkPath = "C:\Program Files\AutoHotkey\v2\AutoHotkey.exe"
+              if (Test-Path $altAhkPath) {
+                  Start-Process -FilePath $altAhkPath -ArgumentList "`"$env:SCRIPT_PATH`""
+                  Write-Host "AutoHotkey script started from alternative location"
+              } else {
+                  Write-Host "Error: AutoHotkey not found in any known location"
+                  # List AutoHotkey installations
+                  Get-ChildItem "C:\Program Files\AutoHotkey" -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+                      Write-Host "Found: $($_.FullName)"
+                  }
+              }
+          }
+
+      - name: Keep workflow running 6 hours
+        run: |
+          Write-Host "=== Parsec Auto Login Workflow ==="
+          Write-Host "AutoHotkey script is running to automate Parsec login"
+          Write-Host "Workflow will run for 6 hours or until manually cancelled"
+          Write-Host "==================================="
+          
+          # Keep the workflow alive for 6 hours
+          $startTime = Get-Date
+          $endTime = $startTime.AddHours(6)
+          
+          while ((Get-Date) -lt $endTime) {
+              $timeLeft = $endTime - (Get-Date)
+              $hoursLeft = [math]::Floor($timeLeft.TotalHours)
+              $minutesLeft = [math]::Floor($timeLeft.TotalMinutes % 60)
+              
+              Write-Host "[$(Get-Date)] AutoHotkey still running... $hoursLeft hours, $minutesLeft minutes remaining"
+              Write-Host "Press Ctrl+C in workflow to terminate early"
+              Start-Sleep -Seconds 300  # Check every 5 minutes
+          }
+          
+          Write-Host "6-hour limit reached, workflow completed"
+
+      - name: Cleanup (optional)
+        if: always()
+        run: |
+          Write-Host "Cleaning up temporary files..."
+          # Kill AutoHotkey process if still running
+          Get-Process "AutoHotkey*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          # Kill Parsec if running
+          Get-Process "parsecd*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleanup completed"
