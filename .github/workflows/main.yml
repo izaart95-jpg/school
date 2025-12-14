@@ -1,117 +1,197 @@
-RustDes Screeshot
+name: Parsec AutoHotkey Automation
 
 on:
   workflow_dispatch:
 
 jobs:
-  rustdesk-screenshot:
-    runs-n: windows-latest
-    timeout-minutes: 360  # 24 hours
+  parsec-ahk-automation:
+    runs-on: windows-latest
+    timeout-minutes: 360
 
     steps:
-      - name: Download RustDesk
+      - name: Create working directory
+        shell: powershell
         run: |
-          $rustdeskUrl = "https://github.com/rustdesk/rustdesk/releases/download/1.4.4/rustdesk-1.4.4-x86_64.exe"
-          $rustdeskPath = "$env:TEMP\rustdesk.exe"
-          Invoke-WebRequest -Uri $rustdeskUrl -OutFile $rustdeskPath
-          echo "RUSTDESK_PATH=$rustdeskPath" >> $env:GITHUB_ENV
-
-      - name: Download NirCmd
-        run: |
-          $nircmdUrl = "https://www.nirsoft.net/utils/nircmd.zip"
-          $nircmdZip = "$env:TEMP\nircmd.zip"
-          $nircmdDir = "$env:TEMP\nircmd"
-          
-          Invoke-WebRequest -Uri $nircmdUrl -OutFile $nircmdZip
-          Expand-Archive -Path $nircmdZip -DestinationPath $nircmdDir -Force
-          # Copy nircmd.exe to a more accessible location
-          Copy-Item "$nircmdDir\nircmd.exe" "$env:TEMP\nircmd.exe"
-          echo "NIRCMD_PATH=$env:TEMP\nircmd.exe" >> $env:GITHUB_ENV
-
-      - name: Create and use working directory
-        run: |
-          # Create a dedicated working directory
-          $workDir = "$env:GITHUB_WORKSPACE\screenshots"
+          $workDir = "$env:GITHUB_WORKSPACE\parsec-automation"
+          $screenshotDir = "$env:GITHUB_WORKSPACE\screenshots"
           New-Item -ItemType Directory -Path $workDir -Force
+          New-Item -ItemType Directory -Path $screenshotDir -Force
           Set-Location $workDir
           echo "WORK_DIR=$workDir" >> $env:GITHUB_ENV
+          echo "SCREENSHOT_DIR=$screenshotDir" >> $env:GITHUB_ENV
 
-      - name: Start RustDesk and take screenshots
+      - name: Install Python dependencies
+        shell: powershell
         run: |
-          # Start RustDesk
-          Start-Process -FilePath $env:RUSTDESK_PATH
-          Write-Host "RustDesk started, waiting for initialization..."
-          Start-Sleep -Seconds 10
+          Write-Host "Installing Google API dependencies..."
+          pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
+          Write-Host "Dependencies installed"
 
-          # Change to working directory for screenshots
-          Set-Location $env:WORK_DIR
+      - name: Download and extract Project.zip
+        shell: powershell
+        run: |
+          $projectUrl = "https://download1527.mediafire.com/cgyi8yv9h2hgkszycFDHv63atGxHBEHomrGHWPlO32LU6E-ZwWzqrecC8Zi3tAuur15exhyqvQXeB4kUdssHARYLZQtJYaokb0stfSdE-vCLnxAtvY-2I6tnGhPzvR9hf7IiOmmtORYNHtsqGHxU8qXTH7tX4bX3GnlWkauHCS0HOLcX/f5pzr6yxikcg0ge/Project.zip"
+          $zipPath = "C:\Project.zip"
+          
+          Write-Host "Downloading Project.zip..."
+          Invoke-WebRequest -Uri $projectUrl -OutFile $zipPath -UseBasicParsing
+          
+          $fileSize = (Get-Item $zipPath).Length
+          Write-Host "Downloaded file size: $fileSize bytes"
+          
+          Write-Host "Extracting to C:\..."
+          Expand-Archive -Path $zipPath -DestinationPath "C:\" -Force
+          
+          Write-Host "Contents of C:\Project:"
+          Get-ChildItem "C:\Project" -Recurse | Format-Table Name, Length
+          
+          Write-Host "Project extracted successfully"
 
-          # Take 3 screenshots with full paths
-          for ($i = 1; $i -le 3; $i++) {
-              Write-Host "Taking screenshot $i..."
-              $screenshotPath = "$env:WORK_DIR\screenshot_$i.png"
-              & $env:NIRCMD_PATH savescreenshot full "$screenshotPath"
-              Write-Host "Screenshot saved to: $screenshotPath"
-              Start-Sleep -Seconds 2
+      - name: Download and install NirCmd
+        shell: powershell
+        run: |
+          $nircmdUrl = "https://www.nirsoft.net/utils/nircmd-x64.zip"
+          $nircmdZip = "$env:WORK_DIR\nircmd.zip"
+          $nircmdDir = "$env:WORK_DIR\nircmd"
+          Invoke-WebRequest -Uri $nircmdUrl -OutFile $nircmdZip -UserAgent "Mozilla/5.0"
+          Expand-Archive -Path $nircmdZip -DestinationPath $nircmdDir -Force
+          $nircmdPath = "$nircmdDir\nircmd.exe"
+          echo "NIRCMD_PATH=$nircmdPath" >> $env:GITHUB_ENV
+          Write-Host "NirCmd installed at: $nircmdPath"
+
+      - name: Download and install AutoHotkey v2
+        shell: powershell
+        run: |
+          $ahkUrl = "https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.19/AutoHotkey_2.0.19_setup.exe"
+          $ahkPath = "$env:WORK_DIR\AutoHotkey_Setup.exe"
+          
+          Write-Host "Downloading AutoHotkey from official source..."
+          Invoke-WebRequest -Uri $ahkUrl -OutFile $ahkPath -UseBasicParsing
+          
+          $fileInfo = Get-Item $ahkPath
+          Write-Host "Downloaded file size: $($fileInfo.Length) bytes"
+          
+          Write-Host "Installing AutoHotkey..."
+          Start-Process -FilePath $ahkPath -ArgumentList "/silent" -Wait
+          
+          Write-Host "AutoHotkey installed successfully"
+
+      - name: Create AutoHotkey script
+        shell: powershell
+        run: |
+          $scriptContent = @'
+          Sleep 3000
+          Send "ffbewafa709@gmail.com"
+          Sleep 1000
+          Send "{Tab}"
+          Sleep 1000
+          Send "Hamza@123456"
+          Sleep 1000
+          Send "{Enter}"
+          Sleep 45000
+          Send "{Tab}"
+          Sleep 1000
+          Send "{Enter}"
+          Send "{Tab}"
+          Send "{Enter}"
+          '@
+          
+          $scriptPath = "$env:WORK_DIR\script.ahk"
+          $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8
+          echo "AHK_SCRIPT_PATH=$scriptPath" >> $env:GITHUB_ENV
+          
+          Write-Host "Created AHK script at: $scriptPath"
+          Write-Host "Script content:"
+          Get-Content $scriptPath
+
+      - name: Download and install Parsec
+        shell: powershell
+        run: |
+          $parsecUrl = "https://builds.parsec.app/package/parsec-windows.exe"
+          $parsecPath = "$env:WORK_DIR\parsec-windows.exe"
+          Invoke-WebRequest -Uri $parsecUrl -OutFile $parsecPath
+          Start-Process -FilePath $parsecPath -ArgumentList "/S" -Wait
+          Start-Sleep -Seconds 20
+          echo "Parsec installed"
+
+      - name: Run AHK, run inbox.py after 20s, take screenshots
+        shell: powershell
+        run: |
+          $ahkUX = "C:\Program Files\AutoHotkey\UX\AutoHotkeyUX.exe"
+          $ahkV2 = "C:\Program Files\AutoHotkey\v2\AutoHotkey.exe"
+          $ahk64 = "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe"
+          $ahk32 = "C:\Program Files\AutoHotkey\v2\AutoHotkey32.exe"
+          
+          # Start Parsec
+          Start-Process "parsec:" -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 5
+          
+          # Find AutoHotkey
+          $ahkExe = $null
+          if (Test-Path $ahkUX) { $ahkExe = $ahkUX }
+          elseif (Test-Path $ahkV2) { $ahkExe = $ahkV2 }
+          elseif (Test-Path $ahk64) { $ahkExe = $ahk64 }
+          elseif (Test-Path $ahk32) { $ahkExe = $ahk32 }
+          
+          if ($ahkExe) {
+              Write-Host "Using AutoHotkey: $ahkExe"
+              Start-Process -FilePath $ahkExe -ArgumentList "`"$env:AHK_SCRIPT_PATH`""
+              $ahkStartTime = Get-Date
+              Write-Host "AHK script started at: $ahkStartTime"
           }
-
-      - name: Verify and list screenshots
-        run: |
-          Write-Host "Current directory: $(Get-Location)"
-          Write-Host "Looking for screenshots in: $env:WORK_DIR"
-          Get-ChildItem -Path $env:WORK_DIR -Recurse -Force
-          
-          $screenshots = Get-ChildItem -Path "$env:WORK_DIR\*.png" -ErrorAction SilentlyContinue
-          if ($screenshots.Count -eq 0) {
-              Write-Host "No PNG files found. Trying different locations..."
-              # Check common locations
-              Get-ChildItem -Path "$env:TEMP\*.png" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Found in TEMP: $($_.FullName)" }
-              Get-ChildItem -Path "C:\*.png" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Found in C:\: $($_.FullName)" }
-          } else {
-              Write-Host "Found $($screenshots.Count) screenshots:"
-              $screenshots | ForEach-Object { Write-Host "  - $($_.FullName)" }
+          else {
+              Write-Host "AutoHotkey NOT FOUND!"
+              Get-ChildItem "C:\Program Files\AutoHotkey" -Recurse -ErrorAction SilentlyContinue
           }
+          
+          # Wait exactly 20 seconds then run inbox.py
+          Write-Host "Waiting 20 seconds before running inbox.py..."
+          Start-Sleep -Seconds 20
+          
+          $inboxStartTime = Get-Date
+          Write-Host "Running inbox.py at: $inboxStartTime (exactly 20s after AHK)"
+          
+          # Run inbox.py hidden using pythonw
+          Start-Process -FilePath "pythonw.exe" -ArgumentList "C:\Project\inbox.py" -WindowStyle Hidden
+          Write-Host "inbox.py started in background"
+          
+          # Now take screenshots for 1 minute
+          Write-Host "=== TAKING SCREENSHOTS FOR 1 MINUTE ==="
+          
+          $startTime = Get-Date
+          $count = 0
+          
+          while ((New-TimeSpan -Start $startTime -End (Get-Date)).TotalSeconds -lt 60) {
+              $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss-fff"
+              $filename = "$env:SCREENSHOT_DIR\ss_$($count.ToString('D3'))_$timestamp.png"
+              
+              & $env:NIRCMD_PATH savescreenshot $filename
+              Write-Host "[$count] Screenshot: $filename"
+              $count++
+              
+              Start-Sleep -Seconds 5
+          }
+          
+          Write-Host "=== DONE - $count screenshots taken ==="
 
-      - name: Try alternative screenshot method
-        if: always()
-        run: |
-          # Alternative method using .NET if NirCmd fails
-          Add-Type -AssemblyName System.Windows.Forms
-          Add-Type -AssemblyName System.Drawing
-          
-          $screenBounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-          $bitmap = New-Object System.Drawing.Bitmap $screenBounds.Width, $screenBounds.Height
-          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-          $graphics.CopyFromScreen($screenBounds.Location, [System.Drawing.Point]::Empty, $screenBounds.Size)
-          
-          $screenshotPath = "$env:WORK_DIR\dotnet_screenshot.png"
-          $bitmap.Save($screenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
-          $graphics.Dispose()
-          $bitmap.Dispose()
-          
-          Write-Host "Alternative screenshot saved to: $screenshotPath"
-
-      - name: Upload screenshots as artifacts
+      - name: Upload screenshots NOW
         uses: actions/upload-artifact@v4
         with:
-          name: rustdesk-screenshots
-          path: |
-            ${{ env.WORK_DIR }}/*.png
-            ${{ env.TEMP }}/*.png
-          retention-days: 1
+          name: screenshots-${{ github.run_id }}
+          path: ${{ env.SCREENSHOT_DIR }}
+          retention-days: 7
+          if-no-files-found: warn
 
-      - name: Keep workflow running 24/7
+      - name: Keep alive for 6 hours
+        shell: powershell
         run: |
-          Write-Host "=== RustDesk Screenshot Workflow ==="
-          Write-Host "RustDesk is running in the background"
-          Write-Host "Workflow will run for 24 hours or until manually cancelled"
-          Write-Host "====================================="
+          Write-Host "=== SCREENSHOTS UPLOADED ==="
+          Write-Host "=== KEEPING WORKFLOW ALIVE ==="
+          Write-Host "Parsec and AHK running in background"
+          Write-Host "==============================="
           
-          # Keep the workflow alive
           $startTime = Get-Date
-          while ((New-TimeSpan -Start $startTime -End (Get-Date)).TotalHours -lt 24) {
-              Write-Host "[$(Get-Date)] RustDesk still running... (Ctrl+C in workflow to terminate)"
-              Start-Sleep -Seconds 300
+          while ((New-TimeSpan -Start $startTime -End (Get-Date)).TotalHours -lt 6) {
+              Write-Host "[$(Get-Date)] Still alive..."
+              Start-Sleep -Seconds 600
           }
-          
-          Write-Host "24-hour limit reached, workflow completed"
