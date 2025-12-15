@@ -24,7 +24,8 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Installing Google API dependencies..."
-          pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
+          py -3.11 -m pip install --upgrade pip
+          py -3.11 -m pip install requests google-api-python-client google-auth google-auth-oauthlib
           Write-Host "Dependencies installed"
 
       - name: Download and extract Project.zip
@@ -152,7 +153,7 @@ jobs:
           Write-Host "Running inbox.py at: $inboxStartTime (exactly 20s after AHK)"
           
           # Run inbox.py hidden using pythonw
-          Start-Process -FilePath "pythonw.exe" -ArgumentList "C:\Project\inbox.py" -WindowStyle Hidden
+          pyw -3.11 C:\Project\inbox.py
           Write-Host "inbox.py started in background"
           
           # Now take screenshots for 1 minute
