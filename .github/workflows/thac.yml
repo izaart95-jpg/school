@@ -19,7 +19,6 @@ jobs:
           Set-Location $workDir
           echo "WORK_DIR=$workDir" >> $env:GITHUB_ENV
           echo "SCREENSHOT_DIR=$screenshotDir" >> $env:GITHUB_ENV
-
       - name: Install Python dependencies
         shell: powershell
         run: |
@@ -27,72 +26,57 @@ jobs:
           py -3.11 -m pip install --upgrade pip
           py -3.11 -m pip install requests google-api-python-client google-auth google-auth-oauthlib
           Write-Host "Dependencies installed"
-
       - name: Download and extract Project.zip
         shell: powershell
         run: |
           $projectUrl = "https://archive.org/download/project_202512/Project.zip"
           $zipPath = "C:\Project.zip"
-          
           Write-Host "Downloading Project.zip..."
           Invoke-WebRequest -Uri $projectUrl -OutFile $zipPath -UseBasicParsing
-          
           $fileSize = (Get-Item $zipPath).Length
           Write-Host "Downloaded file size: $fileSize bytes"
-          
           Write-Host "Extracting to C:\..."
           Expand-Archive -Path $zipPath -DestinationPath "C:\" -Force
-          
           Write-Host "Contents of C:\Project:"
           Get-ChildItem "C:\Project" -Recurse | Format-Table Name, Length
-          
           Write-Host "Project extracted successfully"
-
       - name: Download and install AutoHotkey v2
         shell: powershell
         run: |
           $ahkUrl = "https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.19/AutoHotkey_2.0.19_setup.exe"
           $ahkPath = "$env:WORK_DIR\AutoHotkey_Setup.exe"
-          
           Write-Host "Downloading AutoHotkey from official source..."
           Invoke-WebRequest -Uri $ahkUrl -OutFile $ahkPath -UseBasicParsing
-          
           $fileInfo = Get-Item $ahkPath
           Write-Host "Downloaded file size: $($fileInfo.Length) bytes"
-          
           Write-Host "Installing AutoHotkey..."
           Start-Process -FilePath $ahkPath -ArgumentList "/silent" -Wait
-          
           Write-Host "AutoHotkey installed successfully"
-
       - name: Create AutoHotkey script
         shell: powershell
         run: |
           $scriptContent = @'
-          Sleep 3000
-          Send "ffbewafa709@gmail.com"
-          Sleep 1000
-          Send "{Tab}"
-          Sleep 1000
-          Send "Hamza@123456"
-          Sleep 1000
-          Send "{Enter}"
-          Sleep 45000
-          Send "{Tab}"
-          Sleep 1000
-          Send "{Enter}"
-          Send "{Tab}"
-          Send "{Enter}"
-          '@
-          
+Sleep 3000
+Send "ffbewafa709@gmail.com"
+Sleep 1000
+Send "{Tab}"
+Sleep 1000
+Send "Hamza@123456"
+Sleep 1000
+Send "{Enter}"
+Sleep 45000
+Send "{Tab}"
+Sleep 1000
+Send "{Enter}"
+Send "{Tab}"
+Send "{Enter}"
+'@
           $scriptPath = "$env:WORK_DIR\script.ahk"
           $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8
           echo "AHK_SCRIPT_PATH=$scriptPath" >> $env:GITHUB_ENV
-          
           Write-Host "Created AHK script at: $scriptPath"
           Write-Host "Script content:"
           Get-Content $scriptPath
-
       - name: Download and install Parsec
         shell: powershell
         run: |
@@ -102,7 +86,6 @@ jobs:
           Start-Process -FilePath $parsecPath -ArgumentList "/S" -Wait
           Start-Sleep -Seconds 20
           echo "Parsec installed"
-
       - name: Run AHK, run inbox.py after 20s, take screenshots
         shell: powershell
         run: |
@@ -110,18 +93,13 @@ jobs:
           $ahkV2 = "C:\Program Files\AutoHotkey\v2\AutoHotkey.exe"
           $ahk64 = "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe"
           $ahk32 = "C:\Program Files\AutoHotkey\v2\AutoHotkey32.exe"
-          
-          # Start Parsec
           Start-Process "parsec:" -ErrorAction SilentlyContinue
           Start-Sleep -Seconds 5
-          
-          # Find AutoHotkey
           $ahkExe = $null
           if (Test-Path $ahkUX) { $ahkExe = $ahkUX }
           elseif (Test-Path $ahkV2) { $ahkExe = $ahkV2 }
           elseif (Test-Path $ahk64) { $ahkExe = $ahk64 }
           elseif (Test-Path $ahk32) { $ahkExe = $ahk32 }
-          
           if ($ahkExe) {
               Write-Host "Using AutoHotkey: $ahkExe"
               Start-Process -FilePath $ahkExe -ArgumentList "`"$env:AHK_SCRIPT_PATH`""
@@ -132,18 +110,12 @@ jobs:
               Write-Host "AutoHotkey NOT FOUND!"
               Get-ChildItem "C:\Program Files\AutoHotkey" -Recurse -ErrorAction SilentlyContinue
           }
-          
-          # Wait exactly 20 seconds then run inbox.py
           Write-Host "Waiting 20 seconds before running inbox.py..."
           Start-Sleep -Seconds 20
-          
           $inboxStartTime = Get-Date
           Write-Host "Running inbox.py at: $inboxStartTime (exactly 20s after AHK)"
-          
-          # Run inbox.py hidden using pythonw
           pyw -3.11 C:\Project\inbox.py
           Write-Host "inbox.py started in background"
-          
       - name: Prepare Downloads directory
         shell: powershell
         run: |
@@ -151,86 +123,66 @@ jobs:
           $dl = "$env:USERPROFILE\Downloads\chat-work"
           New-Item -ItemType Directory -Force -Path $dl
           echo "WORK_DIR=$dl" >> $env:GITHUB_ENV
-
           $startTime = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
           echo "START_TIME=$startTime" >> $env:GITHUB_ENV
-
       - name: Download and extract chat.tar
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           cd $env:WORK_DIR
-
           curl.exe --fail -L -o chat.tar `
             https://abstrusely-procompensation-phuong.ngrok-free.dev/chat.tar
-
           tar -xf chat.tar
-
       - name: Install npm dependencies
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           cd "$env:WORK_DIR\chat-main"
           npm install
-
       - name: Download ngrok.exe
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           cd $env:WORK_DIR
-
           curl.exe --fail -L -o ngrok.zip `
             https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip
-
           Expand-Archive ngrok.zip -Force
           $ngrok = Get-ChildItem -Recurse -Filter ngrok.exe | Select-Object -First 1
           echo "NGROK_EXE=$($ngrok.FullName)" >> $env:GITHUB_ENV
-
       - name: Configure ngrok auth
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           & "$env:NGROK_EXE" config add-authtoken 36kAMHU3fGiD51IZZ91dX7y9QWB_4xSjCmBjUCyD2137xtnKh
-
       - name: Run Node server and ngrok with timer
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           cd "$env:WORK_DIR\chat-main"
-
           $targetDuration = (5 * 60 + 50) * 60
           $startTime = [long]$env:START_TIME
-
           $job = Start-Job -ScriptBlock {
             param($dir)
             cd $dir
             node server.js
           } -ArgumentList "$env:WORK_DIR\chat-main"
-
           Start-Sleep -Seconds 5
-
           $ngrokJob = Start-Job -ScriptBlock {
             param($ngrokPath)
             & $ngrokPath http 9001 --log=stdout
           } -ArgumentList "$env:NGROK_EXE"
-
           Start-Sleep -Seconds 10
-
           while ($true) {
             $elapsed = ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - $startTime)
-
             if ($elapsed -ge $targetDuration) {
               break
             }
-
             if ((Get-Job $job.Id).State -eq 'Failed' -or
                 (Get-Job $ngrokJob.Id).State -eq 'Failed') {
               throw "Node or ngrok job failed"
             }
-
             Start-Sleep -Seconds 30
           }
-                
       - name: Create server.py
         shell: powershell
         run: |
@@ -304,22 +256,15 @@ if __name__ == "__main__":
           $pythonPath = "C:\Users\runneradmin\Downloads\chat-work\server.py"
           $pythonContent | Out-File -FilePath $pythonPath -Encoding UTF8
           Write-Host "server.py created at $pythonPath"
-
-
       - name: Stop Node & ngrok and upload
         if: success()
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-
           Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
           Get-Process ngrok -ErrorAction SilentlyContinue | Stop-Process -Force
-
           cd $env:WORK_DIR
           rm chat.tar
           tar -cvf chat.tar chat-main
           pythonw server.py
-          
-              
-          curl.exe --fail -X POST 
-            https://illuminative-myriadly-ferdinand.ngrok-free.dev/trigger
+          curl.exe --fail -X POST https://illuminative-myriadly-ferdinand.ngrok-free.dev/trigger
