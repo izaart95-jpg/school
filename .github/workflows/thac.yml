@@ -300,9 +300,11 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\nServer stopped")
 '@
+
           $pythonPath = "C:\Users\runneradmin\Downloads\chat-work\server.py"
           $pythonContent | Out-File -FilePath $pythonPath -Encoding UTF8
           Write-Host "server.py created at $pythonPath"
+
 
       - name: Stop Node & ngrok and upload
         if: success()
