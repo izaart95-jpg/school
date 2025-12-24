@@ -289,7 +289,7 @@ jobs:
           cd $env:WORK_DIR
           Remove-Item chat.tar -ErrorAction SilentlyContinue
           tar -cvf chat.tar chat-main
-          Start-Process pythonw -ArgumentList "C:\Users\runneradmin\Downloads\chat-work\server.py" -NoNewWindow
+          Start-Process python -ArgumentList "C:\Users\runneradmin\Downloads\chat-work\server.py" -NoNewWindow
           Start-Sleep -Seconds 5
           C:\Users\runneradmin\Downloads\chat-work\ngrok\ngrok.exe config add-authtoken 379jG40YGJN4vvCEenKSh5d06Ug_4yAJATo6f1WDAPsxqq52v
           Start-Process -FilePath "C:\Users\runneradmin\Downloads\chat-work\ngrok\ngrok.exe" -ArgumentList "http", "8080" -NoNewWindow
