@@ -2,6 +2,12 @@ name: CLEAMA
 
 on:
   workflow_dispatch:
+    inputs:
+      tp:
+        description: 'Tailscale IP'
+        required: true
+        default: ''
+        type: string
 
 jobs:
   parsec-ahk-automation:
