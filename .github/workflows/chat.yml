@@ -223,7 +223,8 @@ jobs:
             node server.js
           } -ArgumentList "$env:WORK_DIR\chat-main"
           Start-Sleep -Seconds 5
-         
+          $desktop = "$env:USERPROFILE\Desktop"
+          echo "DESKTOP_DIR=$desktop" >> $env:GITHUB_ENV
           cd $desktop
           Write-Host "Downloading cloudflared..."
           Invoke-WebRequest `
