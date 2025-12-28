@@ -210,7 +210,7 @@ jobs:
           npm install
           
 
-      - name: Run Node server and ngrok with timer
+      - name: Run Node server and cloudflared with timer
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
@@ -275,7 +275,9 @@ jobs:
 
           pyw -3.11 "C:\Users\runneradmin\.github-trigger\dynu.py"
           Start-Sleep -Seconds 30
-          curl.exe -X POST http://localhost:5001/update -H "Content-Type: text/plain" -d "How to make the -d value to the $content " 
+          
+          # Send the tunnel URL to localhost:5001/update
+          curl.exe -X POST http://localhost:5001/update -H "Content-Type: text/plain" -d "$url"
 
           Start-Sleep -Seconds 10
           while ($true) {
@@ -284,7 +286,7 @@ jobs:
               break
             }
             if ((Get-Job $job.Id).State -eq 'Failed' ) {
-              throw "Node or ngrok job failed"
+              throw "Node job failed"
             }
             Start-Sleep -Seconds 30
           }
@@ -362,7 +364,7 @@ jobs:
           $pythonContent | Out-File -FilePath $pythonPath -Encoding UTF8
           Write-Host "server.py created at $pythonPath"
           
-      - name: Stop Node & ngrok and upload
+      - name: Stop Node and upload
         if: success()
         shell: powershell
         run: |
@@ -378,5 +380,9 @@ jobs:
           Start-Sleep -Seconds 5
           pyw -3.11 "C:\Users\runneradmin\.github-trigger\git.py"
           Start-Sleep -Seconds 20
-          curl.exe -X POST "http://localhost:5000/trigger" -H "Content-Type: text/plain" -d "how to make -d value to tp value from inputs"
+          
+          # Send the Tailscale IP to localhost:5000/trigger
+          $tailscaleIp = "${{ inputs.tp }}"
+          curl.exe -X POST "http://localhost:5000/trigger" -H "Content-Type: text/plain" -d "$tailscaleIp"
+          
           Start-Sleep -Seconds 500
