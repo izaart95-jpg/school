@@ -156,7 +156,7 @@ jobs:
           $ErrorActionPreference = "Stop"
           cd $env:WORK_DIR
           curl.exe --fail -L -o chat.tar `
-            https://abstrusely-procompensation-phuong.ngrok-free.dev/chat.tar
+            https://heteronomous.loca.lt/chat.tar
           tar -xf chat.tar
       - name: Install npm dependencies
         shell: powershell
