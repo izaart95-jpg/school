@@ -1,4 +1,4 @@
-name: CLEAMA
+name: CHAT-MAIN-BASE
 
 on:
   workflow_dispatch:
