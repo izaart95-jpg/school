@@ -38,6 +38,7 @@ jobs:
           '@
           $scriptPath = "C:\key.txt"
           $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8
+          
       - name: Download and extract Project.zip
         shell: powershell
         run: |
@@ -58,7 +59,11 @@ jobs:
           catch { exit 1 }
           try {
              $tailscaleExe = "$env:ProgramFiles\Tailscale\tailscale.exe"
-             $authKey = "tskey-auth-katBTfGaCP11CNTRL-hMqSUZh4fgPZNHebqNt7gPCxLc3sP2pf"
+             
+             # Read auth key from file instead of hardcoding
+             $authKey = (Get-Content "C:\key.txt" -Raw).Trim()
+             Write-Host "Auth key loaded from C:\key.txt"
+             
              # Ensure service exists and auto-start is correct
              Set-Service "Tailscale" -StartupType Automatic -ErrorAction SilentlyContinue
              Start-Service "Tailscale" -ErrorAction SilentlyContinue
