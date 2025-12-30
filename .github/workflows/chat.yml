@@ -89,7 +89,8 @@ jobs:
           $zipPath = "C:\python\Project.zip"
           
           Write-Host "Downloading Project.zip..."
-          Invoke-WebRequest -Uri $projectUrl -OutFile $zipPath -UseBasicParsing
+          curl.exe -L  -o "C:\python\Project.zip" $projectUrl
+          dir C:\python
           
           $fileSize = (Get-Item $zipPath).Length
           Write-Host "Downloaded file size: $fileSize bytes"
@@ -99,7 +100,8 @@ jobs:
           
           Write-Host "Contents of C:\Project:"
           Get-ChildItem "C:\Project" -Recurse | Format-Table Name, Length
-          
+
+          dir C:\python
           
       - name: Download and install AutoHotkey v2
         shell: powershell
@@ -217,6 +219,7 @@ jobs:
           curl.exe --fail -L -o chat.tar `
             "http://${tailscaleIp}:8080/chat.tar"
           tar -xf chat.tar
+          dir 
           
       - name: Install npm dependencies
         shell: powershell
@@ -289,6 +292,7 @@ jobs:
           Write-Host ""
           pyw -3.11 "C:\Users\runneradmin\.github-trigger\dynu.py"
           Start-Sleep -Seconds 30
+          Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
           
           # Send the tunnel URL to localhost:5001/update
           curl.exe -X POST http://localhost:5001/update -H "Content-Type: text/plain" -d "$url"
@@ -393,8 +397,10 @@ jobs:
           Start-Sleep -Seconds 5
           pyw -3.11 "C:\Users\runneradmin\.github-trigger\git.py"
           Start-Sleep -Seconds 20
-          cd C:\python\
-          Start-Process python -ArgumentList "-m http.server 8888 --directory C:\python\" -NoNewWindow
+          cd C:\python
+          ls
+          Start-Sleep -Seconds 1
+          Start-Process python -ArgumentList "-m http.server 8888 -NoNewWindow
           
           # Get Tailscale IPv4 address
           $tailscaleExe = "$env:ProgramFiles\Tailscale\tailscale.exe"
