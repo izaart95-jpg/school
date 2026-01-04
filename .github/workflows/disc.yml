@@ -1,0 +1,138 @@
+name: Discord-Message-Editor
+
+on:
+  workflow_dispatch:
+    inputs:
+      token:
+        description: 'Discord Token'
+        required: true
+        type: string
+      channel_id:
+        description: 'Channel ID'
+        required: false
+        default: '1432627429834358835'
+        type: string
+      message_id:
+        description: 'Message ID'
+        required: true
+        type: string
+
+jobs:
+  discord-bot:
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Install discord.py
+        shell: powershell
+        run: |
+          Write-Host "Installing discord.py..."
+          py -3.11 -m pip install --upgrade pip
+          py -3.11 -m pip install discord.py==1.7.3
+          Write-Host "discord.py installed successfully"
+
+      - name: Create main.py script
+        shell: powershell
+        run: |
+          $scriptContent = @'
+          import discord
+          from discord.ext import commands
+          import asyncio
+          import os
+          import sys
+
+          TOKEN = "${{ inputs.token }}"
+          CHANNEL_ID = ${{ inputs.channel_id }}
+          MESSAGE_ID = ${{ inputs.message_id }}
+
+          bot = commands.Bot(command_prefix="!")
+
+          messages = [
+              "Op", "0p", "Up", "Xp", "On", "Oz", "Om", "Lo", "Ex", "To",
+              "Ax", "Ix", "Nu", "Ze", "Qi", "Ka", "Ry", "Mi", "Sa", "Te",
+              "Lu", "Va", "No", "Pi", "Jo", "Ko", "Yu", "Ta", "Mo", "Ni",
+              "Ra", "Su", "Ke", "Do", "Fa", "Li", "Po", "Ro", "Na", "Si",
+              "Ve", "Ga", "Ha", "Ca", "Di", "Fi", "Gi", "Hi", "Ji", "Ki",
+              "Bi", "Ci", "Ei", "Oi", "Ui", "Ai", "We", "Ye", "Xe", "Ze",
+              "Qa", "Qa", "Qu", "Re", "Se", "Me", "Ne", "Pe", "Le", "Ce",
+              "Bo", "Co", "Fo", "Go", "Ho", "Jo", "Ko", "Lo", "Mo", "No",
+              "Do", "Oo", "Po", "Qo", "Ro", "So", "To", "Uo", "Vo", "Wo",
+              "Xa", "Ya", "Za", "Ab", "Eb", "Ib", "Ob", "Ub", "Ac", "Ec",
+              "Ic", "Oc", "Uc", "Ad", "Ed", "Id", "Od", "Ud", "Af", "Ef",
+              "If", "Of", "Uf", "Ag", "Eg", "Ig", "Og", "Ug", "Ah", "Eh",
+              "Ih", "Oh", "Uh", "Aj", "Ej", "Ij", "Oj", "Uj", "Ak", "Ek",
+              "Ik", "Ok", "Uk", "Al", "El", "Il", "Ol", "Ul", "Am", "Em",
+              "Im", "Om", "Um", "An", "En", "In", "On", "Un", "Ap", "Ep",
+              "Ip", "Op", "Up", "Ar", "Er", "Ir", "Or", "Ur", "As", "Es",
+              "Is", "Os", "Us", "At", "Et", "It", "Ot", "Ut", "Av", "Ev",
+              "Iv", "Ov", "Uv", "Aw", "Ew", "Iw", "Ow", "Uw", "Ax", "Ex",
+              "Ix", "Ox", "Ux", "Ay", "Ey", "Iy", "Oy", "Uy", "Az", "Ez",
+              "Iz", "Oz", "Uz", "Aa", "Ee", "Ii", "Oo", "Uu", "YY", "ZZ"
+          ]
+
+          async def edit_message_loop(message):
+              index = 0
+              while True:
+                  await asyncio.sleep(1)
+                  try:
+                      await message.edit(content=messages[index])
+                      index = (index + 1) % len(messages)
+                  except discord.HTTPException as e:
+                      if e.status == 429:
+                          print("Rate limited! Restarting bot...")
+                          await bot.close()
+                          os.execv(sys.executable, [sys.executable] + sys.argv)
+                      else:
+                          print(f"HTTPException: {e}")
+
+          @bot.event
+          async def on_ready():
+              print(f"{bot.user} is ready!")
+              try:
+                  channel = await bot.fetch_channel(CHANNEL_ID)
+              except Exception as e:
+                  print(f"Could not find channel: {e}")
+                  return
+
+              print("Searching for message in history...")
+              target_msg = None
+              try:
+                  async for message in channel.history(limit=80):
+                      if message.id == MESSAGE_ID:
+                          target_msg = message
+                          break
+
+                  if not target_msg:
+                      target_msg = await channel.fetch_message(MESSAGE_ID)
+
+                  print(f"Found target message: {target_msg.id}")
+                  asyncio.create_task(edit_message_loop(target_msg))
+              except discord.Forbidden:
+                  print("Bot doesn't have permission to read this channel/message.")
+              except Exception as e:
+                  print(f"Failed to find message: {e}")
+
+          bot.run(TOKEN, bot=False)
+          '@
+          
+          $scriptPath = "$env:GITHUB_WORKSPACE\main.py"
+          $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8
+          Write-Host "Created main.py at: $scriptPath"
+          Write-Host "Using Channel ID: ${{ inputs.channel_id }}"
+          Write-Host "Using Message ID: ${{ inputs.message_id }}"
+
+      - name: Run Discord Bot
+        shell: powershell
+        run: |
+          Write-Host "Starting Discord bot..."
+          py -3.11 $env:GITHUB_WORKSPACE\main.py
+
+      - name: Keep alive for 6 hours
+        shell: powershell
+        run: |
+          Write-Host "=== KEEPING WORKFLOW ALIVE ==="
+          $startTime = Get-Date
+          while ((New-TimeSpan -Start $startTime -End (Get-Date)).TotalHours -lt 6) {
+              Write-Host "[$(Get-Date)] Still alive..."
+              Start-Sleep -Seconds 600
+          }
