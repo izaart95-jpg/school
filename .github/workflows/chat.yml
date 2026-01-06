@@ -296,16 +296,16 @@ jobs:
           # Send the tunnel URL to localhost:5001/update remove # if u wanna use dynu.py 
           # curl.exe -X POST http://localhost:5001/update -H "Content-Type: text/plain" -d "$url"
           $bodyObj = @{
-            "nodeName": ""
-            "redirectType": "UF"
-            "state": true
-            "url": "$url"
-            "cloak": true
-            "includeQueryString": true
-            "redirect301": false
-            "title": "PulseChat"
-            "metaKeywords": "ChatApp FastChat Pulse Chat"
-            "metaDescription": "PulseChat Best chatting webapp"
+            nodeName = ""
+            redirectType = "UF"
+            state = $true
+            url = $url
+            cloak = true
+            includeQueryString = $true
+            redirect301 = $false
+            title = "PulseChat"
+            metaKeywords = "ChatApp FastChat Pulse Chat"
+            metaDescription = "PulseChat Best chatting webapp"
           }  
 
           $body = $bodyObj | ConvertTo-Json -Depth 3
