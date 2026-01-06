@@ -295,12 +295,8 @@ jobs:
           
           # Send the tunnel URL to localhost:5001/update remove # if u wanna use dynu.py 
           # curl.exe -X POST http://localhost:5001/update -H "Content-Type: text/plain" -d "$url"
-          
-          curl.exe -X POST "https://api.dynu.com/v2/dns/13506963/webRedirect/17628087" `
-          -H "accept: application/json" `
-          -H "Content-Type: application/json" `
-          -H "API-Key: UcX5424UT6VV263Z3ef46UdYc3WT35a7" `
-          -d ("{`"nodeName`":`"`",`"redirectType`":`"UF`",`"state`":true,`"url`":`"" + $url + "`",`"cloak`":true,`"includeQueryString`":true,`"redirect301`":false,`"title`":`"PulseChat`",`"metaKeywords`":`"ChatApp FastChat Pulse Chat`",`"metaDescription`":`"PulseChat Best chatting webapp`"}")
+          py -3.11 -c "import sys,requests,json; url=sys.argv[1]; requests.post('https://api.dynu.com/v2/dns/13506963/webRedirect/17628087', headers={'accept':'application/json','Content-Type':'application/json','API-Key':'UcX5424UT6VV263Z3ef46UdYc3WT35a7'}, data=json.dumps({'nodeName':'','redirectType':'UF','state':True,'url':url,'cloak':True,'includeQueryString':True,'redirect301':False,'title':'PulseChat','metaKeywords':'ChatApp FastChat Pulse Chat','metaDescription':'PulseChat Best chatting webapp'}))" $url
+
 
                     
 
