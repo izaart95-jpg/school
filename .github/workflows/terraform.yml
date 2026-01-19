@@ -238,10 +238,10 @@ jobs:
           
           $targetDuration = (5 * 60 + 30) * 60
           $startTime = [long]$env:START_TIME
-          $job = Start-Job -ScriptBlock {
-            cd C:\python\server\
-            java -jar -Xms2G -Xmx16G server.jar nogui
-          } -ArgumentList "$env:WORK_DIR\chat-main"
+          $job = Start-Job -WorkingDirectory "C:\python\server" -ScriptBlock {
+            java -Xms2G -Xmx16G -jar server.jar nogui
+           }
+
           Start-Sleep -Seconds 5
           # $desktop = "$env:USERPROFILE\Desktop"
           # echo "DESKTOP_DIR=$desktop" >> $env:GITHUB_ENV
