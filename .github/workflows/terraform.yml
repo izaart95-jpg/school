@@ -238,10 +238,7 @@ jobs:
           
           $targetDuration = (5 * 60 + 30) * 60
           $startTime = [long]$env:START_TIME
-          $job = Start-Job -ScriptBlock {
-            Set-Location "C:\python\server"
-            java -Xms2G -Xmx16G -jar server.jar nogui
-          }
+          Start-Process "java" -ArgumentList "-Xms2G -Xmx16G -jar server.jar nogui" -WorkingDirectory "C:\python\server" -NoNewWindow 
 
 
           Start-Sleep -Seconds 5
@@ -302,9 +299,6 @@ jobs:
             $elapsed = ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - $startTime)
             if ($elapsed -ge $targetDuration) {
               break
-            }
-            if ((Get-Job $job.Id).State -eq 'Failed' ) {
-              throw "Server job failed"
             }
             Start-Sleep -Seconds 30
           }
