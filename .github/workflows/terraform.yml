@@ -211,15 +211,19 @@ jobs:
           echo "START_TIME=$startTime" >> $env:GITHUB_ENV
           Write-Host "Project extracted successfully"
           
-      - name: Download and extract server.jar
+      - name: Download and extract server.tar
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           cd C:\python\
           $tailscaleIp = "${{ inputs.tp }}"
-          curl.exe --fail -L -o chat.tar `
-            "http://${tailscaleIp}:8080/server.jar"
-          dir 
+          curl.exe --fail -L -o server.tar `
+            "http://${tailscaleIp}:8080/server.tar"
+          dir
+          tar -xf server.tar
+          Start-Sleep -Seconds 15
+          Remove-Item server.tar -Force 
+          
           
       - name: ls
         shell: powershell
@@ -235,13 +239,13 @@ jobs:
           $targetDuration = (5 * 60 + 50) * 60
           $startTime = [long]$env:START_TIME
           $job = Start-Job -ScriptBlock {
-            cd C:\python\
-            java -jar server.jar nogui
+            cd C:\python\server\
+            java -jar -Xms2G -Xmx16G server.jar nogui
           } -ArgumentList "$env:WORK_DIR\chat-main"
           Start-Sleep -Seconds 5
-          $desktop = "$env:USERPROFILE\Desktop"
-          echo "DESKTOP_DIR=$desktop" >> $env:GITHUB_ENV
-          cd $desktop
+          # $desktop = "$env:USERPROFILE\Desktop"
+          # echo "DESKTOP_DIR=$desktop" >> $env:GITHUB_ENV
+          # cd $desktop
           Write-Host "Downloading cloudflared..."
           # curl.exe -L -o "cloudflared.exe" "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
           # Unblock-File "cloudflared.exe"
@@ -306,92 +310,17 @@ jobs:
       - name: Create server.py
         shell: powershell
         run: |
-          $pythonContent = @'
-          from http.server import HTTPServer, BaseHTTPRequestHandler
-          import os
+          cd C:\python\
+          tar -cf server.tar server
+          Start-Process python -ArgumentList "-m http.server 8080" -NoNewWindow
           
-          FILENAME = "server.jar"
-          PORT = 8080
-          
-          class FileHandler(BaseHTTPRequestHandler):
-              def do_GET(self):
-                  if self.path == "/server.jar":
-                      self.download_file()
-                  elif self.path == "/":
-                      self.serve_index()
-                  else:
-                      self.send_error(404)
-          
-              def download_file(self):
-                  if os.path.exists(FILENAME):
-                      self.send_response(200)
-                      self.send_header("Content-Type", "application/java-archive")
-                      self.send_header("Content-Disposition", f'attachment; filename="{FILENAME}"')
-                      self.send_header("Content-Length", os.path.getsize(FILENAME))
-                      self.end_headers()
-                      with open(FILENAME, "rb") as f:
-                          while True:
-                              chunk = f.read(10 * 1024 * 1024)
-                              if not chunk:
-                                  break
-                              self.wfile.write(chunk)    
-                  else:
-                      self.send_error(404, "server.jar not found")
-          
-              def serve_index(self):
-                  exists = os.path.exists(FILENAME)
-                  size = os.path.getsize(FILENAME) if exists else 0
-                  size_mb = f"{size / 1024 / 1024:.2f} MB" if size > 0 else "0 bytes"
-          
-                  html = f"""<html><body>
-          <h1>server.jar Manager</h1>
-          <p>Status: {"Available" if exists else "Not available"} ({size_mb})</p>
-          <a href='/server.jar'><button {"" if exists else "disabled"}>Download</button></a>
-          </body></html>"""
-                  
-                  self.send_response(200)
-                  self.send_header("Content-Type", "text/html")
-                  self.end_headers()
-                  self.wfile.write(html.encode())
-          
-              def do_POST(self):
-                  if self.path == "/delete":
-                      if os.path.exists(FILENAME):
-                          os.remove(FILENAME)
-                      self.redirect("/")
-                  else:
-                      self.send_error(404)
-          
-              def redirect(self, location):
-                  self.send_response(303)
-                  self.send_header("Location", location)
-                  self.end_headers()
-          
-          if __name__ == "__main__":
-              server = HTTPServer(("0.0.0.0", PORT), FileHandler)
-              print(f"Server running on http://0.0.0.0:{PORT}")
-              try:
-                  server.serve_forever()
-              except KeyboardInterrupt:
-                  print("\nServer stopped")
-          '@
-          
-          $pythonPath = "C:\Users\runneradmin\Downloads\chat-work\server.py"
-          $pythonContent | Out-File -FilePath $pythonPath -Encoding UTF8
-          Write-Host "server.py created at $pythonPath"
           
       - name: Stop Node and upload
         if: success()
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-          Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
-          
-          cd $env:WORK_DIR
-          Remove-Item chat.tar -ErrorAction SilentlyContinue
-          tar -cvf chat.tar chat-main
-          Start-Process python -ArgumentList "C:\Users\runneradmin\Downloads\chat-work\server.py" -NoNewWindow
-          Start-Sleep -Seconds 5
+
           
           Start-Sleep -Seconds 5
           pyw -3.11 "C:\Users\runneradmin\.github-trigger\git.py"
