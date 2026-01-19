@@ -236,7 +236,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           cd "$env:WORK_DIR\chat-main"
-          $targetDuration = (5 * 60 + 50) * 60
+          $targetDuration = (5 * 60 + 30) * 60
           $startTime = [long]$env:START_TIME
           $job = Start-Job -ScriptBlock {
             cd C:\python\server\
