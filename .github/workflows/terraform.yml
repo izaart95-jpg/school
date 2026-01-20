@@ -307,6 +307,7 @@ jobs:
         shell: powershell
         run: |
           cd C:\python\
+          taskkill /F /IM java.exe
           tar -cf server.tar server
           Start-Process python -ArgumentList "-m http.server 8080" -NoNewWindow
           
