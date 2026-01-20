@@ -238,7 +238,7 @@ jobs:
           
           $targetDuration = (5 * 60 + 30) * 60
           $startTime = [long]$env:START_TIME
-          Start-Process "java" -ArgumentList "-Xms2G -Xmx16G -jar server.jar nogui" -WorkingDirectory "C:\python\server" -NoNewWindow 
+          Start-Process "java" -ArgumentList "-Xms10G -Xmx10G -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:ActiveProcessorCount=20 -XX:MaxGCPauseMillis=100 -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch -XX:+DisableExplicitGC -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -jar server.jar nogui" -WorkingDirectory "C:\python\server" -NoNewWindow 
 
 
           Start-Sleep -Seconds 5
