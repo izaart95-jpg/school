@@ -324,7 +324,7 @@ jobs:
           
           Start-Sleep -Seconds 5
           Start-Process py -ArgumentList '-3.11 "C:\Users\runneradmin\.github-trigger\git.py"' 
-          Start-Sleep -Seconds 5
+          Start-Sleep -Seconds 15
           cd C:\python
           ls
           Start-Sleep -Seconds 1
