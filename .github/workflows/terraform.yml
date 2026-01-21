@@ -245,6 +245,8 @@ jobs:
           
 
           Start-Sleep -Seconds 5
+          Start-Process "java" `  -ArgumentList "-Xms10G -Xmx10G -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch -XX:+DisableExplicitGC -jar server.jar nogui" `  -WorkingDirectory "C:\python\server" `  -NoNewWindow
+          Start-Sleep -Seconds 5
           # $desktop = "$env:USERPROFILE\Desktop"
           # echo "DESKTOP_DIR=$desktop" >> $env:GITHUB_ENV
           # cd $desktop
