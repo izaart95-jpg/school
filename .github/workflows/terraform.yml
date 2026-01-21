@@ -83,7 +83,7 @@ jobs:
           
           
           $tailscaleIp = "${{ inputs.tp }}"
-          tailscale ip
+          
           tailscale help
           tailscale ip
           curl.exe -L -o "C:\python\github.zip" "http://${tailscaleIp}:8888/github.zip"
