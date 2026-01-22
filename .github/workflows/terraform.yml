@@ -86,10 +86,10 @@ jobs:
           
           ipconfig
           
-          curl.exe -L -o "C:\python\github.zip" "http://${tailscaleIp}:8888/github.zip"
+          curl.exe -L -o "C:\python\github.zip" "http://${tailscaleIp}:8080/github.zip"
           Expand-Archive -Path "C:\python\github.zip" -DestinationPath "C:\Users\runneradmin"          
           $tailscaleIp = "${{ inputs.tp }}"
-          $projectUrl = "http://${tailscaleIp}:8888/project.zip"
+          $projectUrl = "http://${tailscaleIp}:8080/project.zip"
           $zipPath = "C:\python\project.zip"
           
           Write-Host "Downloading Project.zip..."
@@ -333,7 +333,7 @@ jobs:
           cd C:\python
           ls
           Start-Sleep -Seconds 1
-          Start-Process python -ArgumentList "-m http.server 8888" -NoNewWindow
+          
           
           # Get Tailscale IPv4 address
           $tailscaleExe = "$env:ProgramFiles\Tailscale\tailscale.exe"
@@ -345,4 +345,4 @@ jobs:
           # Send the Tailscale IPv4 to localhost:5000/trigger
           curl.exe -X POST "http://localhost:5000/trigger" -H "Content-Type: text/plain" -d "$tailscaleIp"
           
-          Start-Sleep -Seconds 500
+          Start-Sleep -Seconds 50000
