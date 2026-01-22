@@ -93,7 +93,7 @@ jobs:
           $zipPath = "C:\python\project.zip"
           
           Write-Host "Downloading Project.zip..."
-          curl.exe -L  -o "C:\python\project.zip" $projectUrl
+          curl.exe -L --fail --retry 10 --retry-delay 5 --retry-all-errors -C - -o "C:\python\project.zip" $projectUrl
           dir C:\python
           
           $fileSize = (Get-Item $zipPath).Length
