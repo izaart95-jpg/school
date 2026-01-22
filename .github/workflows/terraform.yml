@@ -84,9 +84,9 @@ jobs:
           
           $tailscaleIp = "${{ inputs.tp }}"
           
-          Start-Sleep 19
           
-          curl.exe -L -o "C:\python\github.zip" "http://${tailscaleIp}:8080/github.zip"
+          
+          curl.exe -L --fail --retry 10 --retry-delay 5 --retry-all-errors -C - -o  "C:\python\github.zip" "http://${tailscaleIp}:8080/github.zip"
           Expand-Archive -Path "C:\python\github.zip" -DestinationPath "C:\Users\runneradmin"          
           $tailscaleIp = "${{ inputs.tp }}"
           $projectUrl = "http://${tailscaleIp}:8080/project.zip"
