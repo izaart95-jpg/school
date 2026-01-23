@@ -317,7 +317,7 @@ jobs:
           cd C:\python\
           taskkill /F /IM java.exe
           tar -cf server.tar server
-          Start-Process python -ArgumentList "-m http.server 8080" -NoNewWindow
+          
           
           
       - name: Stop Node and upload
@@ -344,5 +344,5 @@ jobs:
           
           # Send the Tailscale IPv4 to localhost:5000/trigger
           curl.exe -X POST "http://localhost:5000/trigger" -H "Content-Type: text/plain" -d "$tailscaleIp"
-          
-          Start-Sleep -Seconds 50000
+          cd C:\python\
+          python -m http.server 8080 
