@@ -1,4 +1,4 @@
-name: BAT
+name: MC 
 
 on:
   workflow_dispatch:
